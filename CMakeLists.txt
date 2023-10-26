@@ -1,0 +1,6 @@
+if (NOT PICO_NO_HARDWARE)
+    add_subdirectory(main)
+    add_subdirectory(motor)
+    add_subdirectory(wheelEncoder)
+    add_subdirectory(ultrasonic)
+endif ()
