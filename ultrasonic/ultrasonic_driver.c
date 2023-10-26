@@ -4,7 +4,7 @@
 #include "hardware/timer.h"
 
 #define TIMEOUT 26100
-#define TRIGGER_PULSE_US 10
+#define TRIGGER_PULSE_US 100
 
 #define gpio_triggerPin 12
 #define gpio_echoPin 13
@@ -13,7 +13,7 @@ static volatile uint64_t start_time;
 static volatile uint64_t end_time;
 static volatile bool measurement_fired = false;
 
-void trigger_pulse()
+void trigger_pulse_high(struct repeating_timer t )
 {
     /**
      * @brief Triggers an ultrasonic pulse
@@ -22,11 +22,28 @@ void trigger_pulse()
      * and then sets the trigger pin back to LOW
      */
 
-    gpio_put(gpio_triggerPin, gpio_triggerPin);
-    sleep_ms(TRIGGER_PULSE_US);
-    gpio_put(gpio_triggerPin, gpio_triggerPin);
+    gpio_put(gpio_triggerPin, 1);
 }
 
+void trigger_pulse_low(struct repeating_timer t )
+{
+    /**
+     * @brief Triggers an ultrasonic pulse
+     *
+     * This function sets the trigger pin to HIGH, waits for a short duration
+     * and then sets the trigger pin back to LOW
+     */
+
+    gpio_put(gpio_triggerPin, 0);
+}
+
+void trigger_pulse_callback(struct repeating_timer *t)
+{
+    // Toggle the GPIO pin state
+    gpio_put(gpio_triggerPin, !gpio_get(gpio_triggerPin));
+}
+
+can
 void echo_irq_callback(uint gpio, uint32_t events)
 {
     /**
@@ -102,7 +119,7 @@ void ultrasonic_init()
     gpio_set_dir(gpio_triggerPin, GPIO_OUT);
     gpio_set_dir(gpio_echoPin, GPIO_IN);
 
-    gpio_set_irq_enabled_with_callback(gpio_echoPin, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, &echo_irq_callback);
+    //gpio_set_irq_enabled_with_callback(gpio_echoPin, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, &echo_irq_callback);
 }
 
 uint64_t get_measurement_cm()
@@ -114,7 +131,7 @@ uint64_t get_measurement_cm()
      * and calculates the distance in centimeters
      */
 
-    trigger_pulse();
+    //trigger_pulse();
 
     uint64_t pulseLength = end_time - start_time;
 
