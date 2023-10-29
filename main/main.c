@@ -32,9 +32,7 @@
 
 // message buffer
 #define mbaTASK_MESSAGE_BUFFER_SIZE (60)
-#define WHEELENCODER_TASK_PRIORITY (tskIDLE_PRIORITY + 1UL)
 
-static MessageBufferHandle_t speedBuffer;
 
 
 void motor_task(__unused void *params)
@@ -66,6 +64,26 @@ void ultrasonic_task(__unused void *params)
     }
 }
 
+void barcode_task(__unused void *params)
+{
+    
+    struct repeating_timer timer;
+
+    while(1)
+    {
+        char character = getchar();
+        printf("%c", character);
+        switch (character) {
+            case 'r': {
+                // Call the custom reset function
+                //reset_function();
+                add_repeating_timer_ms(-100, adc_callback, NULL, &timer); //Value determines how often ADC value is printed 
+                break;
+            }
+        }
+    }
+}
+
 
 void vLaunch( void) {
 
@@ -77,7 +95,11 @@ void vLaunch( void) {
     xTaskCreate(wheelencoder_task, "WheelEncoderThread", configMINIMAL_STACK_SIZE, NULL, TEST_TASK_PRIORITY, &wheelencodertask);
 
     TaskHandle_t ultrasonictask;
-    xTaskCreate(ultrasonic_task, "UltraSonicThread", configMINIMAL_STACK_SIZE, NULL, TEST_TASK_PRIORITY, &ultrasonictask);
+    xTaskCreate(ultrasonic_task, "UltraSonicThread", configMINIMAL_STACK_SIZE, NULL, TEST_TASK_PRIORITY + 1, &ultrasonictask);
+
+    TaskHandle_t barcodetask;
+    xTaskCreate(barcode_task, "UltraSonicThread", configMINIMAL_STACK_SIZE, NULL, TEST_TASK_PRIORITY , &barcodetask);
+    
     
 
 #if NO_SYS && configUSE_CORE_AFFINITY && configNUM_CORES > 1
@@ -97,6 +119,7 @@ int main( void )
     motorInit();
     sensorInit();
     ultrasonic_init();
+    barcodeInit();
 
     sleep_ms(5000);
 

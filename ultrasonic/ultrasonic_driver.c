@@ -23,7 +23,7 @@ void trigger_pulse()
      */
 
     gpio_put(gpio_triggerPin, 1);
-    sleep_ms(50);
+    sleep_ms(TRIGGER_PULSE_US);
     gpio_put(gpio_triggerPin, 0);
 }
 
@@ -102,7 +102,7 @@ void ultrasonic_init()
     gpio_set_dir(gpio_triggerPin, GPIO_OUT);
     gpio_set_dir(gpio_echoPin, GPIO_IN);
 
-    //gpio_set_irq_enabled_with_callback(gpio_echoPin, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, &echo_irq_callback);
+    gpio_set_irq_enabled_with_callback(gpio_echoPin, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, &echo_irq_callback);
 }
 
 uint64_t get_measurement_cm()
