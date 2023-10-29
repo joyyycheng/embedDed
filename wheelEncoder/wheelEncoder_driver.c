@@ -6,6 +6,7 @@
 #include <sys/time.h> 
 #include "pico/time.h" 
 
+
 #define SENSOR1_OUT 6 
 #define SENSOR1_VCC 7 
 #define SENSOR1_GND 8 
@@ -17,11 +18,10 @@
 int counter = 0; 
 int wheelCount = 0; 
 int previousPinState = 0; 
-double speed = 0;
+double speed = 0.0;
 
 static absolute_time_t startTime;
 static absolute_time_t endTime;
-
 
 void sensorInit() 
 { 
@@ -56,7 +56,7 @@ void sensorInit()
  
 } 
 
-bool getResults1 (struct repeating_timer t) 
+bool getResults1 () 
 { 
     int getState = gpio_get(SENSOR1_OUT); 
     //printf("pin state: %d\n", getState); 
@@ -72,36 +72,28 @@ bool getResults2 (struct repeating_timer t)
     return getState; 
 } 
 
-void getSpeed(int pinState)
-{
+void getSpeed(int pinState) {
 
-    if (pinState == 1 && previousPinState == 0) 
-    { 
-        if (counter == 0)
-        {
+    if (pinState == 1 && previousPinState == 0) { 
+        if (counter == 0) {
             startTime = get_absolute_time();
-        }
+        } 
         counter++; 
-        if(counter % 20 == 0) 
-        { 
+        if(counter % 20 == 0) { 
             endTime = get_absolute_time();
             counter = 0;
             wheelCount++;                
 
-            uint64_t duration_us = absolute_time_diff_us(startTime, endTime) ;
+            uint64_t duration_us = absolute_time_diff_us(startTime, endTime);
             double duration_sec = (double)duration_us / 1000000.0;
 
-            // Print or use the time duration as needed 
+            // Print or use the time duration as needed  
             printf("Time duration: %.6f seconds\n", duration_sec);
 
             speed = 19.792 / duration_sec;
 
             printf("The speed is %.6f cm/s\n", speed);
-
         }        
     }
     previousPinState = pinState;
-
 }
-
- 

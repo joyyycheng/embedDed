@@ -13,7 +13,7 @@ static volatile uint64_t start_time;
 static volatile uint64_t end_time;
 static volatile bool measurement_fired = false;
 
-void trigger_pulse_high(struct repeating_timer t )
+void trigger_pulse()
 {
     /**
      * @brief Triggers an ultrasonic pulse
@@ -23,27 +23,10 @@ void trigger_pulse_high(struct repeating_timer t )
      */
 
     gpio_put(gpio_triggerPin, 1);
-}
-
-void trigger_pulse_low(struct repeating_timer t )
-{
-    /**
-     * @brief Triggers an ultrasonic pulse
-     *
-     * This function sets the trigger pin to HIGH, waits for a short duration
-     * and then sets the trigger pin back to LOW
-     */
-
+    sleep_ms(50);
     gpio_put(gpio_triggerPin, 0);
 }
 
-void trigger_pulse_callback(struct repeating_timer *t)
-{
-    // Toggle the GPIO pin state
-    gpio_put(gpio_triggerPin, !gpio_get(gpio_triggerPin));
-}
-
-can
 void echo_irq_callback(uint gpio, uint32_t events)
 {
     /**
@@ -131,7 +114,7 @@ uint64_t get_measurement_cm()
      * and calculates the distance in centimeters
      */
 
-    //trigger_pulse();
+    trigger_pulse();
 
     uint64_t pulseLength = end_time - start_time;
 
