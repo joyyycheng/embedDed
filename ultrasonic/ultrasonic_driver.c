@@ -6,6 +6,7 @@
 #define TIMEOUT 26100
 #define TRIGGER_PULSE_US 100
 
+#define gpio_vcc 15
 #define gpio_triggerPin 12
 #define gpio_echoPin 13
 
@@ -101,6 +102,14 @@ void ultrasonic_init()
 
     gpio_set_dir(gpio_triggerPin, GPIO_OUT);
     gpio_set_dir(gpio_echoPin, GPIO_IN);
+
+    gpio_init(gpio_vcc); 
+    // gpio_init(GND_PIN);
+
+    gpio_set_dir(gpio_vcc, GPIO_OUT); 
+    // gpio_set_dir(GND_PIN, GPIO_OUT); 
+
+    gpio_put(gpio_vcc, 1);  // Set VCC pin to HIGH 
 
     gpio_set_irq_enabled_with_callback(gpio_echoPin, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, &echo_irq_callback);
 }

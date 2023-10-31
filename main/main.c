@@ -6,8 +6,8 @@
 
 #include "pico/cyw43_arch.h"
 #include "pico/stdlib.h"
-
-
+#include "pico/binary_info.h"
+#include "hardware/i2c.h"
 #include "lwip/ip4_addr.h"
 
 #include "FreeRTOS.h"
@@ -17,6 +17,9 @@
 #include "motor_driver.h"
 #include "wheelEncoder_driver.h"
 #include "ultrasonic_driver.h"
+#include "barcode_driver.h"
+//#include "magnetometer_driver.h"
+
 
 // lab 5 for message buffer
 #include "message_buffer.h"
@@ -33,6 +36,8 @@
 // message buffer
 #define mbaTASK_MESSAGE_BUFFER_SIZE (60)
 
+#define I2C_BAUD 400 // 400 or 100 (kHz)
+#define REFRESH_PERIOD 100 // ms
 
 
 void motor_task(__unused void *params)
@@ -51,6 +56,9 @@ void wheelencoder_task(__unused void *params)
     {
         int pinState1 = getResults1(); 
         getSpeed(pinState1);
+        
+        int pinState2 = getResults2();
+        getSpeed2(pinState2);
     }
 
 }
@@ -61,45 +69,70 @@ void ultrasonic_task(__unused void *params)
     {
         uint64_t pulseLength = get_measurement_cm();
         printf("this is distance: %lldcm \n", pulseLength);
+
+        if(pulseLength < 10)
+        {
+            stop();
+        }
+        else
+        {
+            moveForward();
+        }
+
     }
 }
 
 void barcode_task(__unused void *params)
 {
     
-    struct repeating_timer timer;
 
     while(1)
     {
-        char character = getchar();
-        printf("%c", character);
-        switch (character) {
-            case 'r': {
-                // Call the custom reset function
-                //reset_function();
-                add_repeating_timer_ms(-100, adc_callback, NULL, &timer); //Value determines how often ADC value is printed 
-                break;
-            }
-        }
+
+        adc_callback();
+        sleep_ms(100);
     }
 }
+
+// void magnetometer_task(__unused void *params)
+// {
+//     accel_t acc;
+//     mag_t mag;
+
+
+//     while(1)
+//     {
+//         lsm303dlh_acc_setup();
+//         lsm303dlh_mag_setup();
+//         lsm303dlh_read_acc(&acc);
+//         lsm303dlh_read_mag(&mag);
+//         //int32_t angle = get_angle(&mag); // TODO Work in progress
+//         printf("Acc. X = %5d Y = %5d, Z = %5d \t Mag. X = %4d Y = %4d, Z = %4d \r\n",
+//                 acc.x,acc.y,acc.z,mag.x,mag.y,mag.z);
+//         sleep_ms(REFRESH_PERIOD);
+//     }
+// }
 
 
 void vLaunch( void) {
 
 
-    TaskHandle_t motorTask;
-    xTaskCreate(motor_task, "MotorThread", configMINIMAL_STACK_SIZE, NULL, TEST_TASK_PRIORITY, &motorTask);
+    // TaskHandle_t motorTask;
+    // xTaskCreate(motor_task, "MotorThread", configMINIMAL_STACK_SIZE, NULL, TEST_TASK_PRIORITY, &motorTask);
     
-    TaskHandle_t wheelencodertask;
-    xTaskCreate(wheelencoder_task, "WheelEncoderThread", configMINIMAL_STACK_SIZE, NULL, TEST_TASK_PRIORITY, &wheelencodertask);
+    // TaskHandle_t wheelencodertask;
+    // xTaskCreate(wheelencoder_task, "WheelEncoderThread", configMINIMAL_STACK_SIZE, NULL, TEST_TASK_PRIORITY, &wheelencodertask);
 
-    TaskHandle_t ultrasonictask;
-    xTaskCreate(ultrasonic_task, "UltraSonicThread", configMINIMAL_STACK_SIZE, NULL, TEST_TASK_PRIORITY + 1, &ultrasonictask);
+    // TaskHandle_t ultrasonictask;
+    // xTaskCreate(ultrasonic_task, "UltraSonicThread", configMINIMAL_STACK_SIZE, NULL, TEST_TASK_PRIORITY + 1, &ultrasonictask);
 
     TaskHandle_t barcodetask;
-    xTaskCreate(barcode_task, "UltraSonicThread", configMINIMAL_STACK_SIZE, NULL, TEST_TASK_PRIORITY , &barcodetask);
+    xTaskCreate(barcode_task, "BarCodeThread", configMINIMAL_STACK_SIZE, NULL, TEST_TASK_PRIORITY , &barcodetask);
     
+    // testing separately
+    // TaskHandle_t magnetometertask;
+    // xTaskCreate(magnetometer_task, "MagnetometerThread", configMINIMAL_STACK_SIZE, NULL, TEST_TASK_PRIORITY, &magnetometertask);
+
     
 
 #if NO_SYS && configUSE_CORE_AFFINITY && configNUM_CORES > 1
@@ -116,12 +149,14 @@ void vLaunch( void) {
 int main( void )
 {
     stdio_init_all();
-    motorInit();
-    sensorInit();
-    ultrasonic_init();
-    barcodeInit();
+    //bus_scanner();
 
-    sleep_ms(5000);
+    motor_init();
+    sensor_init();
+    ultrasonic_init();
+    barcode_init();
+    //magnetometer_init();
+    sleep_ms(1000);
 
     /* Configure the hardware ready to run the demo. */
     const char *rtos_name;

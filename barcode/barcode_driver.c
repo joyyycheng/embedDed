@@ -7,8 +7,9 @@
 #include "hardware/adc.h"
 #include "pico/time.h"
 
-#define PWM_PIN 14 // original was 2
-#define ADC_PIN 28
+#define VCC_PIN 14 // original was 2
+//#define GND_PIN 15 // original was 2
+#define ADC_PIN 26
 
 #define LIGHT_THRESHOLD 1500  // Adjust this threshold for light/dark line detection. Ideally value between 300-500
 #define DARK_THRESHOLD 1800  // Adjust this threshold for wide/narrow line detection. Idealy value between 1800-2400
@@ -66,6 +67,31 @@ struct Code39Character code39_binary[] = {
     {'%', "000010010"}
 };
 
+void barcode_init()
+{
+    gpio_set_function(VCC_PIN, GPIO_FUNC_PWM);
+    
+    gpio_init(VCC_PIN); 
+    // gpio_init(GND_PIN);
+
+    gpio_set_dir(VCC_PIN, GPIO_OUT); 
+    // gpio_set_dir(GND_PIN, GPIO_OUT); 
+
+    gpio_put(VCC_PIN, 1);  // Set VCC pin to HIGH 
+    // gpio_put(GND_PIN, 0);  // Set GND pin to LOW 
+
+    uint slice_num = pwm_gpio_to_slice_num(VCC_PIN);
+    pwm_set_clkdiv(slice_num, 100);                  // Adjust the clock divider, PWM signal frequency reduced by factor of 100
+    pwm_set_wrap(slice_num, 62500);                  // Period of the PWM signal
+    pwm_set_chan_level(slice_num, PWM_CHAN_A, 1250); // 50% duty cycle, high for half, low for other half
+    pwm_set_enabled(slice_num, true);
+
+    // Initialize ADC on GP26 (ADC_PIN)
+    adc_init();
+    adc_gpio_init(ADC_PIN);
+    adc_select_input(0); // Use ADC channel 0 as GP26 is ADC0
+}
+
 // Function to decode the binary to respective letter or symbol
 char decode_code39(const char* binary_pattern, struct Code39Character* dictionary) {
     for (int i = 0; i < 44; i++) {
@@ -112,7 +138,7 @@ char* binaryToChar(int num) {
     return binaryStr;
 }
 
-bool adc_callback()
+void adc_callback()
 {
     static bool on_dark_line = false;  // Flag to track whether the sensor is on a dark line
     static bool first_dark_line_detected = false; // Flag to track the first dark line detection
@@ -236,22 +262,7 @@ bool adc_callback()
         dark_line_duration++;
     }
 
-    return true;
 }
 
-void barcodeInit()
-{
-    gpio_set_function(PWM_PIN, GPIO_FUNC_PWM);
 
-    uint slice_num = pwm_gpio_to_slice_num(PWM_PIN);
-    pwm_set_clkdiv(slice_num, 100);                  // Adjust the clock divider, PWM signal frequency reduced by factor of 100
-    pwm_set_wrap(slice_num, 62500);                  // Period of the PWM signal
-    pwm_set_chan_level(slice_num, PWM_CHAN_A, 1250); // 50% duty cycle, high for half, low for other half
-    pwm_set_enabled(slice_num, true);
-
-    // Initialize ADC on GP26 (ADC_PIN)
-    adc_init();
-    adc_gpio_init(ADC_PIN);
-    adc_select_input(0); // Use ADC channel 0 as GP26 is ADC0
-}
 

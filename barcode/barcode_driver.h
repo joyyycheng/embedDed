@@ -1,2 +1,2 @@
-void barcodeInit();
-bool adc_callback()
+void adc_callback();
+void barcode_init();

@@ -11,11 +11,12 @@
 #define MOTOR_IN2_PIN 2 // GPIO2 
  
 #define MOTOR_ENB_PIN 3 // GPIO3 
-#define MOTOR_IN3_PIN 4 // GPIO4 
-#define MOTOR_IN4_PIN 5 // GPIO5 
+#define MOTOR_IN3_PIN 17 // GPIO4 
+#define MOTOR_IN4_PIN 16 // GPIO5 
 
 
-void motorInit() {  
+void motor_init() {  
+    printf("motor");
     gpio_init(MOTOR_ENA_PIN); 
     gpio_init(MOTOR_IN1_PIN); 
     gpio_init(MOTOR_IN2_PIN); 
@@ -45,7 +46,7 @@ void motorInit() {
     pwm_set_wrap(slice_num_motor1, 12000); 
     pwm_set_wrap(slice_num_motor2, 12500); 
  
-    pwm_set_chan_level(slice_num_motor1, PWM_CHAN_A, 12000/1.8); 
+    pwm_set_chan_level(slice_num_motor1, PWM_CHAN_A, 12000/1.5); 
     pwm_set_chan_level(slice_num_motor2, PWM_CHAN_B, 12500/1.5);   
  
     pwm_set_enabled(slice_num_motor1, true); 
@@ -82,7 +83,7 @@ void moveBackward()
  
 void moveForward() 
 { 
-    motorControlA(1, 0, 1); 
+    motorControlA(1, 1, 0); 
     motorControlB(1, 1, 0); 
     // sleep_ms(500); 
     // stop(); 

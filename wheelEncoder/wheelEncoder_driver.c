@@ -23,7 +23,15 @@ double speed = 0.0;
 static absolute_time_t startTime;
 static absolute_time_t endTime;
 
-void sensorInit() 
+int counter2 = 0; 
+int wheelCount2 = 0; 
+int previousPinState2 = 0; 
+double speed2 = 0.0;
+
+static absolute_time_t startTime2;
+static absolute_time_t endTime2;
+
+void sensor_init() 
 { 
     gpio_init(SENSOR1_OUT); 
     gpio_init(SENSOR1_VCC); 
@@ -92,8 +100,34 @@ void getSpeed(int pinState) {
 
             speed = 19.792 / duration_sec;
 
-            printf("The speed is %.6f cm/s\n", speed);
+            printf("The speed of wheel encoder 1 is %.6f cm/s\n", speed);
         }        
     }
     previousPinState = pinState;
+}
+
+void getSpeed2(int pinState) {
+
+    if (pinState == 1 && previousPinState2 == 0) { 
+        if (counter2 == 0) {
+            startTime2 = get_absolute_time();
+        } 
+        counter2++; 
+        if(counter2 % 20 == 0) { 
+            endTime2 = get_absolute_time();
+            counter2 = 0;
+            wheelCount2++;                
+
+            uint64_t duration_us2 = absolute_time_diff_us(startTime2, endTime2);
+            double duration_sec2 = (double)duration_us2 / 1000000.0;
+
+            // Print or use the time duration as needed  
+            printf("Time duration: %.6f seconds\n", duration_sec2);
+
+            speed2 = 19.792 / duration_sec2;
+
+            printf("The speed of wheel encoder 2 is %.6f cm/s\n", speed2);
+        }        
+    }
+    previousPinState2 = pinState;
 }
