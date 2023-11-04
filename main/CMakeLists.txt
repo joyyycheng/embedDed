@@ -17,6 +17,7 @@ if (EXISTS ${PICO_LWIP_CONTRIB_PATH}/apps/ping/ping.c)
             motor_driver 
             ultrasonic_driver
             barcode_driver
+            pidcontroller
             magnetometer_driver
             pico_cyw43_arch_lwip_threadsafe_background
             pico_stdlib
@@ -47,6 +48,7 @@ if (EXISTS ${PICO_LWIP_CONTRIB_PATH}/apps/ping/ping.c)
             motor_driver 
             ultrasonic_driver
             barcode_driver
+            pidcontroller
             magnetometer_driver
             pico_cyw43_arch_lwip_sys_freertos
             pico_stdlib

@@ -3,5 +3,5 @@
 void sensor_init();
 bool getResults1();
 bool getResults2();
-void getSpeed(int pinState);
-void getSpeed2(int pinState);
+float getSpeed(int pinState);
+float getSpeed2(int pinState);

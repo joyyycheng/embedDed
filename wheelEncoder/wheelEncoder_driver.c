@@ -31,6 +31,7 @@ double speed2 = 0.0;
 static absolute_time_t startTime2;
 static absolute_time_t endTime2;
 
+float totalDistance = 0;
 void sensor_init() 
 { 
     gpio_init(SENSOR1_OUT); 
@@ -80,7 +81,7 @@ bool getResults2 (struct repeating_timer t)
     return getState; 
 } 
 
-void getSpeed(int pinState) {
+float getSpeed(int pinState) { // left
 
     if (pinState == 1 && previousPinState == 0) { 
         if (counter == 0) {
@@ -96,17 +97,22 @@ void getSpeed(int pinState) {
             double duration_sec = (double)duration_us / 1000000.0;
 
             // Print or use the time duration as needed  
-            printf("Time duration: %.6f seconds\n", duration_sec);
+            // printf("Time duration: %.6f seconds\n", duration_sec);
 
             speed = 19.792 / duration_sec;
 
-            printf("The speed of wheel encoder 1 is %.6f cm/s\n", speed);
+            totalDistance += 19.72;
+
+            // printf("The speed of wheel encoder 1 is %.6f cm/s\n", speed);
+            printf("Left: %.6f cm/s | ", speed);
+            
+            return speed;
         }        
     }
     previousPinState = pinState;
 }
 
-void getSpeed2(int pinState) {
+float getSpeed2(int pinState) { //right
 
     if (pinState == 1 && previousPinState2 == 0) { 
         if (counter2 == 0) {
@@ -122,11 +128,14 @@ void getSpeed2(int pinState) {
             double duration_sec2 = (double)duration_us2 / 1000000.0;
 
             // Print or use the time duration as needed  
-            printf("Time duration: %.6f seconds\n", duration_sec2);
+            // printf("Time duration: %.6f seconds\n", duration_sec2);
 
             speed2 = 19.792 / duration_sec2;
 
-            printf("The speed of wheel encoder 2 is %.6f cm/s\n", speed2);
+            // printf("The speed of wheel encoder 2 is %.6f cm/s\n", speed2);
+            printf("Right: %.6f cm/s\n", speed2);
+            
+            return speed2;
         }        
     }
     previousPinState2 = pinState;
