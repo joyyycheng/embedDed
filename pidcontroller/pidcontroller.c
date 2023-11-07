@@ -44,6 +44,7 @@ float compute_pid2(float setpoint, float current_value, float *integral, float *
     float error = current_value - setpoint;
     *integral += error;
     float derivative = error - *prev_error;
+    printf("error: %f, integral: %f, derivative %f\n", error, (*integral), derivative);
     float control_signal = Kp * error + Ki * (*integral) + Kd * derivative * 0.1; //diff from jason
     *prev_error = current_value;
     return control_signal;

@@ -19,6 +19,7 @@ if (EXISTS ${PICO_LWIP_CONTRIB_PATH}/apps/ping/ping.c)
             barcode_driver
             pidcontroller
             magnetometer_driver
+            linereader_driver
             pico_cyw43_arch_lwip_threadsafe_background
             pico_stdlib
             pico_lwip_iperf
@@ -50,6 +51,7 @@ if (EXISTS ${PICO_LWIP_CONTRIB_PATH}/apps/ping/ping.c)
             barcode_driver
             pidcontroller
             magnetometer_driver
+            linereader_driver
             pico_cyw43_arch_lwip_sys_freertos
             pico_stdlib
             pico_lwip_iperf

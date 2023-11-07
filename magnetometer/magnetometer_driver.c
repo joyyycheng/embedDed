@@ -85,7 +85,7 @@ void lsm303dlh_read_mag(mag_t *mag) {
 
 // function --------------------------------------------------------------
 float get_angle(mag_t *mag) {
-   float angle_deg = (float)((atan2(mag->z, mag->x) * 180.0) / PI);
+   float angle_deg = (float)((atan2(mag->z, -mag->x) * 180.0) / PI);
    if (angle_deg < 0.0) angle_deg += 360.0;
    angle_deg -= 262.5;
    if (angle_deg < 0.0) angle_deg += 360.0;

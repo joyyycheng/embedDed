@@ -134,16 +134,16 @@ void turnRight()
 { 
     motorControlA(0, 1, 0); 
     motorControlB(1, 0, 1); 
+    sleep_ms(500); 
+    stop(); 
     
    
 } 
  
-void turnLeft(int angle) 
+void turnLeft() 
 { 
-    motorControlA(1, 1, 0); 
-    motorControlB(1, 1, 0); 
-    sleep_ms(angle); // if it is 500ms it will turn 180 degrees instead of 90 degrees 
-    stop(); 
+    motorControlA(1, 0, 1); 
+    motorControlB(0, 1, 0); 
 } 
 
 

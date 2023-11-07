@@ -40,8 +40,14 @@
 #define I2C_BAUD 400 // 400 or 100 (kHz)
 
 
+
 void motor_task(__unused void *params)
 {
+    // while(1)
+    // {
+    //     moveForward();
+    //     gas();
+    // }
     
     float startingMag = -1;
 
@@ -52,17 +58,12 @@ void motor_task(__unused void *params)
 
     while (startingMag < 0)
     {
+
         lsm303dlh_mag_setup();
-      // lsm303dlh_read_acc(&acc);
         lsm303dlh_read_mag(&mag);
         startingMag = get_angle(&mag);
         
-        printf("Mag. X = %4d Y = %4d, Z = %4d \t Angle = %f \r\n",
-                mag.x,mag.y,mag.z,startingMag);
-        
-
     }
-    
     
 
     while (1)
@@ -70,12 +71,19 @@ void motor_task(__unused void *params)
         lsm303dlh_mag_setup();
         lsm303dlh_read_mag(&mag);
         angle = get_angle(&mag);
-        diffAngle = angle - startingMag;
+        diffAngle = angle - startingMag ;
+        
+        if (diffAngle < -15)
+        {
+            diffAngle += 360;
+        }
 
-        printf("staring angle: %0.6f | endingAngle: %0.6f | diff angle: %0.6f\n", startingMag, angle, diffAngle);
-        sleep_ms(50);
+        printf("staring angle: %0.6f | ending angle: %0.6f | diff angle: %0.6f\n", startingMag, angle, diffAngle);
+        sleep_ms(25);
 
-        if (diffAngle >= 90.0)
+
+
+        if (diffAngle >= 80 && diffAngle <= 100)
         {
             // Angle has reached or exceeded 90 degrees, stop the car
             stop();
@@ -86,6 +94,39 @@ void motor_task(__unused void *params)
         turnRight();
         gas();
     }
+
+
+    // while (1)
+    // {
+    //     lsm303dlh_mag_setup();
+    //     lsm303dlh_read_mag(&mag);
+    //     angle = get_angle(&mag);
+    //     diffAngle = startingMag - angle ;
+        
+    //     if (diffAngle < -15)
+    //     {
+    //         diffAngle += 360;
+    //     }
+
+    //     printf("staring angle: %0.6f | ending angle: %0.6f | diff angle: %0.6f\n", startingMag, angle, diffAngle);
+    //     sleep_ms(50);
+
+
+
+    //     if (diffAngle >= 85 && diffAngle <= 95)
+    //     {
+    //         // Angle has reached or exceeded 90 degrees, stop the car
+    //         stop();
+    //         printf("Reached 90 degrees, stopping the car\n");
+    //         break; // Exit the loop and end the task
+    //     }
+
+    //     turnLeft();
+    //     gas();
+    // }
+
+    moveForward();
+    gas();
 }
 
 void wheelencoder_task(__unused void *params)
@@ -146,6 +187,15 @@ void magnetometer_task(__unused void *params)
     //            mag.x,mag.y,mag.z,angle);
     //   sleep_ms(REFRESH_PERIOD);
    }
+}
+
+void linereader_task(__unused void *params)
+{
+    while(1)
+    {
+        adc_callback();
+        
+    }
 }
 
 
