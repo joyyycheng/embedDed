@@ -12,7 +12,7 @@
 #include "pico/stdlib.h"
 #include "pico/binary_info.h"
 #include "hardware/i2c.h"
-#include "magnetometer.h"
+#include "magnetometer_driver.h"
 
 #define I2C_BAUD 100 // 400 or 100 (kHz)
 #define REFRESH_PERIOD 100 // ms
