@@ -26,7 +26,6 @@ float xBias, yBias, xScale;
 void init_i2c_default();
 
 void lsm303dlh_mag_setup() {
-   sleep_ms(1000);
    uint8_t buffer[2];
    buffer[0] = MAG_CRA; buffer[1] = 0x18; // CRA_REG_M: 75Hz(0x18) 30Hz(0x14) 15Hz(0x10) Data Output Rate
    i2c_write_blocking( i2c_default, INTERFACE_B, buffer, 2, true );
@@ -102,11 +101,15 @@ float get_angle(mag_t *mag) {
 }
 
 void magnetometer_init() {
-   mag_t mag;
    init_i2c_default();
    lsm303dlh_mag_setup();
    lsm303dlh_mag_hard_iron();
-   float angle = get_angle(&mag);
+}
+
+float magnetometer_heading() {
+   mag_t mag;
+   lsm303dlh_read_mag(&mag);
+   return get_angle(&mag);
 }
 
 // int main() {
