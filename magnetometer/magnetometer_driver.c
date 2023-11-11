@@ -21,7 +21,7 @@ void init_i2c_default();
 
 void lsm303dlh_mag_setup() {
    uint8_t buffer[2];
-   buffer[0] = MAG_CRA; buffer[1] = 0x10; // CRA_REG_M: 15Hz Data Output Rate
+   buffer[0] = MAG_CRA; buffer[1] = 0x18; // CRA_REG_M: 75Hz(0x18) 30Hz(0x14) 15Hz(0x10) Data Output Rate
    i2c_write_blocking( i2c_default, INTERFACE_B, buffer, 2, true );
    buffer[0] = MAG_CRB; buffer[1] = 0xE0; // CRB_REG_M: Gain X,Y,Z at 230 LSB/Gauss
    i2c_write_blocking( i2c_default, INTERFACE_B, buffer, 2, true );
