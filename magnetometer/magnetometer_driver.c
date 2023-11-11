@@ -92,16 +92,21 @@ float get_angle(mag_t *mag) {
    if (heading > 2*M_PI) heading -= 2*M_PI;
 
    // Convert from Radians to Degrees
-   float rawHeadingDeg = (heading * 180.0) / M_PI;
-
-   // Offset for Degrees Accuracy
-   float newHeadingDeg = rawHeadingDeg;
+   float headingDeg = (heading * 180.0) / M_PI;
 
    // Correct for Degrees Range
-   if (newHeadingDeg < 0.0) newHeadingDeg += 360.0;
-   if (newHeadingDeg > 360.0) newHeadingDeg -= 360.0;
+   if (headingDeg < 0.0) headingDeg += 360.0;
+   if (headingDeg > 360.0) headingDeg -= 360.0;
 
-   return newHeadingDeg;
+   return headingDeg;
+}
+
+void magnetometer_init() {
+   mag_t mag;
+   init_i2c_default();
+   lsm303dlh_mag_setup();
+   lsm303dlh_mag_hard_iron();
+   float angle = get_angle(&mag);
 }
 
 // int main() {
