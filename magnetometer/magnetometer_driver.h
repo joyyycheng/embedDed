@@ -31,5 +31,8 @@ void lsm303dlh_read_mag(mag_t *mag);
  */
 float get_angle(mag_t *mag);
 
+void magnetometer_init();
+float magnetometer_heading();
+
 #endif
 /* end of lsm303dlh.h */
