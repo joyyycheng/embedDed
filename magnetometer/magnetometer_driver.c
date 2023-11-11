@@ -17,9 +17,16 @@
 #define I2C_BAUD 100 // 400 or 100 (kHz)
 #define REFRESH_PERIOD 100 // ms
 
+float xMin = 100000;
+float xMax = -100000;
+float yMin = 100000;
+float yMax = -100000;
+float xBias, yBias, xScale;
+
 void init_i2c_default();
 
 void lsm303dlh_mag_setup() {
+   sleep_ms(1000);
    uint8_t buffer[2];
    buffer[0] = MAG_CRA; buffer[1] = 0x18; // CRA_REG_M: 75Hz(0x18) 30Hz(0x14) 15Hz(0x10) Data Output Rate
    i2c_write_blocking( i2c_default, INTERFACE_B, buffer, 2, true );
@@ -29,8 +36,34 @@ void lsm303dlh_mag_setup() {
    i2c_write_blocking( i2c_default, INTERFACE_B, buffer, 2, false );
 }
 
+void lsm303dlh_mag_hard_iron() {
+   // sleep_ms(1000);
+   // float readings[][2] = {
+   //    {53, 40},    // 0 deg
+   //    {-7, 44},    // 45
+   //    {-50, -26},  // 90
+   //    {-11, -80},  // 135
+   //    {38, -87},   // 180
+   //    {70, -65},   // 225
+   //    {85, -40},   // 270
+   //    {85, -1},    // 315
+   // };
+   // for (int i = 0; i < 8; i++)
+   // {
+   //    if (readings[i][0] < xMin) xMin = readings[i][0];
+   //    if (readings[i][0] > xMax) xMax = readings[i][0];
+   //    if (readings[i][1] < yMin) yMin = readings[i][1];
+   //    if (readings[i][1] > yMax) yMax = readings[i][1];
+   // }
+   // xBias = (xMin+xMax)/2;
+   // yBias = (yMin+yMax)/2;
+   xBias = -27.5;
+   yBias = +20.0;
+   // xScale = xMax/yMax;
+   // printf("%f, %f, %f", xMax, yMax, xScale);
+}
+
 void lsm303dlh_read_mag(mag_t *mag) {
-   lsm303dlh_mag_setup();
    uint8_t buffer[6];
    int16_t magnet[3];
    uint8_t reg = MAG_REG;
@@ -39,25 +72,19 @@ void lsm303dlh_read_mag(mag_t *mag) {
    for (int i = 0; i < 3; i++) {
       magnet[i] = ((buffer[i * 2] << 8 | buffer[(i * 2) + 1] ));
    }
-   mag->x = magnet[0] - 67.5;  //OUT_X_M: 0x03 & 0x04
-   mag->y = magnet[2] + 107.0; //OUT_Y_M: 0x07 & 0x08
+   // mag->x = (magnet[0] - xBias) * xScale; //OUT_X_M: 0x03 & 0x04 -20.0
+   mag->x = magnet[0] + xBias; //OUT_X_M: 0x03 & 0x04 -20.0
+   mag->y = magnet[2] + yBias; //OUT_Y_M: 0x07 & 0x08 +20.0
    mag->z = magnet[1];         //OUT_Z_M: 0x05 & 0x06
 }
 
-// float get_angle(mag_t *mag) {
-//    float angle_deg = (float)((atan2(mag->x, mag->y) * 180.0) / PI);
-//    if (angle_deg < 0.0) angle_deg += 360.0;
-//    // angle_deg -= 262.5;
-//    // if (angle_deg < 0.0) angle_deg += 360.0;
-//    return angle_deg;
-// }
-
 float get_angle(mag_t *mag) {
    // Raw Heading
-   float_t heading = (float)(atan2(mag->x, mag->y));
+   float heading = 1 - (float) atan2( (float)mag->y, (float)mag->x );
 
    // Correct for Magnetic Declination
-   float_t decangl = 0.05;
+   // https://www.magnetic-declination.com/SINGAPORE/SINGAPORE/2443440.html
+   float decangl = (0.05 * M_PI) / 180.0;
    heading += decangl;
 
    // Correct for Radian Range
@@ -65,18 +92,10 @@ float get_angle(mag_t *mag) {
    if (heading > 2*M_PI) heading -= 2*M_PI;
 
    // Convert from Radians to Degrees
-   float_t rawHeadingDeg = heading * 180.0/M_PI;
+   float rawHeadingDeg = (heading * 180.0) / M_PI;
 
    // Offset for Degrees Accuracy
-   float_t newHeadingDeg = rawHeadingDeg + 17.0;
-   if (rawHeadingDeg >= 0.0 && rawHeadingDeg < 45.0)    newHeadingDeg += 0.0;
-   if (rawHeadingDeg >= 45.0 && rawHeadingDeg < 90.0)   newHeadingDeg += 1.0;
-   if (rawHeadingDeg >= 90.0 && rawHeadingDeg < 135.0)  newHeadingDeg += 2.0;
-   if (rawHeadingDeg >= 135.0 && rawHeadingDeg < 180.0) newHeadingDeg += 3.0;
-   if (rawHeadingDeg >= 180.0 && rawHeadingDeg < 225.0) newHeadingDeg += 3.0;
-   if (rawHeadingDeg >= 225.0 && rawHeadingDeg < 270.0) newHeadingDeg += 2.0;
-   if (rawHeadingDeg >= 270.0 && rawHeadingDeg < 315.0) newHeadingDeg += 1.0;
-   if (rawHeadingDeg >= 315.0 && rawHeadingDeg < 360.0) newHeadingDeg += 0.0;
+   float newHeadingDeg = rawHeadingDeg;
 
    // Correct for Degrees Range
    if (newHeadingDeg < 0.0) newHeadingDeg += 360.0;
@@ -87,12 +106,14 @@ float get_angle(mag_t *mag) {
 
 // int main() {
 //    mag_t mag;
-//    init_i2c_default();
 //    stdio_init_all();
+//    init_i2c_default();
+//    lsm303dlh_mag_setup();
+//    lsm303dlh_mag_hard_iron();
 //    while (true) {
 //       lsm303dlh_read_mag(&mag);
 //       float angle = get_angle(&mag);
-//       printf("%4d, %4d, %4d, %f \r\n", mag.x,mag.y,mag.z,angle);
+//       printf("%4d, %4d, %f\r\n", mag.x,mag.y,angle);
 //       sleep_ms(REFRESH_PERIOD);
 //    }
 //    return 0;
