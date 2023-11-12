@@ -1,8 +1,8 @@
 /*
-   GPIO PICO_DEFAULT_I2C_SDA_PIN (On Pico this is GP4 (e.g. pin 6)) -> SDA
-   GPIO PICO_DEFAULT_I2C_SCL_PIN (On Pico this is GP5 (e.g. pin 7)) -> SCL
-   3.3v (e.g. pin 36) -> VCC
-   GND (e.g. pin 38)  -> GND
+  GPIO PICO_DEFAULT_I2C_SDA_PIN (On Pico this is GP4 (e.g. pin 6)) -> SDA
+  GPIO PICO_DEFAULT_I2C_SCL_PIN (On Pico this is GP5 (e.g. pin 7)) -> SCL
+  3.3v (e.g. pin 36) -> VCC
+  GND (e.g. pin 38)  -> GND
 */
 
 #include <math.h>
@@ -30,7 +30,7 @@ void lsm303dlh_mag_setup() {
   i2c_write_blocking( i2c_default, MAG_SLV, buffer, 2, true );
   buffer[0] = MAG_CRB; buffer[1] = 0xE0; // CRB_REG_M: Gain X,Y,Z at 230 LSB/Gauss
   i2c_write_blocking( i2c_default, MAG_SLV, buffer, 2, true );
-  buffer[0] = MAG_MRR;  buffer[1] = 0x00; //  MR_REG_M: Continuous-Conversion Mode
+  buffer[0] = MAG_MRR; buffer[1] = 0x00; //  MR_REG_M: Continuous-Conversion Mode
   i2c_write_blocking( i2c_default, MAG_SLV, buffer, 2, false );
 }
 
@@ -41,7 +41,7 @@ void lsm303dlh_read_mag(mag_t *mag) {
   i2c_write_blocking( i2c_default, MAG_SLV, &reg, 1, true );
   i2c_read_blocking( i2c_default, MAG_SLV, buffer, 6, false );
   for (int i = 0; i < 3; i++) {
-     magnet[i] = ((buffer[i * 2] << 8 | buffer[(i * 2) + 1] ));
+    magnet[i] = ((buffer[i * 2] << 8 | buffer[(i * 2) + 1] ));
   }
   mag->x = magnet[0] + X_OFFSET; // OUT_X_M: 0x03 & 0x04
   mag->y = magnet[2] + Y_OFFSET; // OUT_Y_M: 0x07 & 0x08
