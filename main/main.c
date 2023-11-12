@@ -31,7 +31,6 @@
 
 // message buffer
 #define mbaTASK_MESSAGE_BUFFER_SIZE (60)
-#define I2C_BAUD 400 // 400 or 100 (kHz)
 
 void motor_task(__unused void *params)
 {
@@ -44,23 +43,19 @@ void motor_task(__unused void *params)
   float startingMag = -1;
   float angle = 0;
   float diffAngle = 0;
-  mag_t mag;
 
   do {
-    lsm303dlh_read_mag(&mag);
-    startingMag = get_angle(&mag);
+    startingMag = magnetometer_heading();
   } while (startingMag < 0);
 
   while (1)
   {
-    lsm303dlh_read_mag(&mag);
-    angle = get_angle(&mag);
+    angle = magnetometer_heading();
     diffAngle = angle - startingMag;
 
     if (diffAngle < 0) diffAngle += 360;
 
     printf("staring angle: %f | ending angle: %f | diff angle: %f\n", startingMag, angle, diffAngle);
-    sleep_ms(100);
 
     if (diffAngle >= 80 && diffAngle <= 100)
     {
@@ -198,13 +193,12 @@ void vLaunch( void) {
 
 int main( void )
 {
-  init_i2c_default();
   stdio_init_all();
   motor_init();
   sensor_init();
   ultrasonic_init();
   barcode_init();
-  //magnetometer_init();
+  magnetometer_init();
   sleep_ms(5000);
 
   /* Configure the hardware ready to run the demo. */
