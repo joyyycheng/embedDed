@@ -14,8 +14,8 @@
 #define MOTOR_IN3_PIN 17 // GPIO4 
 #define MOTOR_IN4_PIN 16 // GPIO5 
 
-volatile float duty_cycle_Left = 12500/1.3; // GPIO5 
-volatile float duty_cycle_Right = 12500/1.5; 
+volatile float duty_cycle_Left = 12500/1.5; // GPIO5
+volatile float duty_cycle_Right = 12500/1.7;
 
 void trigger_motor_Left() {
     uint slice_num_motor1 = pwm_gpio_to_slice_num(MOTOR_ENA_PIN); //left
@@ -134,10 +134,6 @@ void turnRight()
 { 
     motorControlA(0, 1, 0); 
     motorControlB(1, 0, 1); 
-    sleep_ms(500); 
-    stop(); 
-    
-   
 } 
  
 void turnLeft() 
