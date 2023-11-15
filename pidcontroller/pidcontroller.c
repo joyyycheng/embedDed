@@ -44,7 +44,7 @@ float compute_pid2(float setpoint, float current_value, float *integral, float *
     float error = current_value - setpoint;
     *integral += error;
     float derivative = error - *prev_error;
-    printf("error: %f, integral: %f, derivative %f\n", error, (*integral), derivative);
+    //printf("error: %f, integral: %f, derivative %f\n", error, (*integral), derivative);
     float control_signal = Kp * error + Ki * (*integral) + Kd * derivative * 0.1; //diff from jason
     *prev_error = current_value;
     return control_signal;
@@ -63,7 +63,7 @@ float prev_error2 = 0;               // store value of error from previous itera
 void *gas()
 {
     // initialise variables
-    float setpoint = 32;             // target speed for the motors (TO BE CHANGED)
+    float setpoint = 30;             // target speed for the motors (TO BE CHANGED)
     int pinState1 = getResults1();
     float current_speed_A = getSpeed(pinState1); // measure speed of motor A
 
