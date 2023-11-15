@@ -1,5 +1,5 @@
-char *get_time();
+char *get_time_lr();
 char* intToBinaryString(int num);
 void ir_sensor_init();
-int scan_walls(int carDirection);
-bool adc_callback(struct repeating_timer *t);
+int scan_walls();
+void adc_callback_lr();

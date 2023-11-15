@@ -13,13 +13,14 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "ping.h"
-
+#include <math.h>
 #include "motor_driver.h"
 #include "wheelEncoder_driver.h"
 #include "ultrasonic_driver.h"
 #include "barcode_driver.h"
 #include "pidcontroller.h"
 #include "magnetometer_driver.h"
+#include "linereader_driver.h"
 
 // lab 5 for message buffer
 #include "message_buffer.h"
@@ -32,6 +33,80 @@
 // message buffer
 #define mbaTASK_MESSAGE_BUFFER_SIZE (60)
 
+//Initialize initial = 0  // Start with the initial heading
+//Set amount = 10  // Specify the degree of rotation for each step
+//function rotateLeft():
+//  heading = (initial - amount) % 360
+
+void rotate_left(float rotate_amount, float initial_heading)
+{
+  float final_heading = fmod((initial_heading - rotate_amount), 360.0);
+
+    while (1)
+    {
+    float current_heading = magnetometer_heading();
+
+    printf("staring angle: %f | ending angle: %f | current angle: %f\n", initial_heading, final_heading, current_heading);
+
+    // vTaskDelay(pdMS_TO_TICKS(100));
+
+
+    if (current_heading > final_heading - 10 && current_heading < final_heading + 10)
+    {
+      // Angle has reached or exceeded 90 degrees, stop the car
+      // printf("Reached 90 degrees, stopping the car\n");
+      stop();
+      vTaskDelay(pdMS_TO_TICKS(100));
+      // moveForward();
+      // gas();
+      break; // Exit the loop and end the task
+    }
+    else
+    {
+      turnLeft();
+      gas();
+    }
+  }
+}
+
+void rotate_right(double rotate_amount, double initial_heading)
+{
+  float final_heading = fmod((initial_heading + rotate_amount), 360.0);
+
+  while (1)
+  {
+    float current_heading = magnetometer_heading();
+
+    // printf("staring angle: %f | ending angle: %f | current angle: %f\n", initial_heading, final_heading, current_heading);
+
+    // vTaskDelay(pdMS_TO_TICKS(100));
+
+
+    if (current_heading > final_heading - 10 && current_heading < final_heading + 10)
+    {
+      // Angle has reached or exceeded 90 degrees, stop the car
+      // printf("Reached 90 degrees, stopping the car\n");
+      stop();
+      vTaskDelay(pdMS_TO_TICKS(100));
+      // moveForward();
+      // gas();
+      break; // Exit the loop and end the task
+    }
+    else
+    {
+      turnRight();
+      gas();
+    }
+
+    turnRight();
+    gas();
+  }
+
+}
+
+
+
+
 void motor_task(__unused void *params)
 {
   // while(1)
@@ -40,35 +115,38 @@ void motor_task(__unused void *params)
   //     gas();
   // }
 
-  float startingMag = -1;
-  float angle = 0;
-  float diffAngle = 0;
+  // float startingMag = -1;
+  // float angle = 0;
+  // float diffAngle = 0;
 
-  do {
-    startingMag = magnetometer_heading();
-  } while (startingMag < 0);
+  // do {
+  //   startingMag = magnetometer_heading();
+  // } while (startingMag < 0);
 
-  while (1)
-  {
-    angle = magnetometer_heading();
-    diffAngle = angle - startingMag;
+  // while (1)
+  // {
+  //   angle = magnetometer_heading();
 
-    if (diffAngle < 0) diffAngle += 360;
+  //   diffAngle = angle - startingMag;
+  //   if (diffAngle < 0) diffAngle += 360;
+  //   printf("staring angle: %f | ending angle: %f | diff angle: %f\n", startingMag, angle, diffAngle);
 
-    printf("staring angle: %f | ending angle: %f | diff angle: %f\n", startingMag, angle, diffAngle);
+  //   vTaskDelay(pdMS_TO_TICKS(100));
 
-    if (diffAngle >= 80 && diffAngle <= 100)
-    {
-      // Angle has reached or exceeded 90 degrees, stop the car
-      printf("Reached 90 degrees, stopping the car\n");
-      moveForward();
-      gas();
-      break; // Exit the loop and end the task
-    }
+  //   if (diffAngle >= 80 && diffAngle <= 350)
+  //   {
+  //     // Angle has reached or exceeded 90 degrees, stop the car
+  //     // printf("Reached 90 degrees, stopping the car\n");
+  //     stop();
+  //     vTaskDelay(pdMS_TO_TICKS(100));
+  //     moveForward();
+  //     gas();
+  //     break; // Exit the loop and end the task
+  //   }
 
-    turnRight();
-    gas();
-  }
+  //   turnRight();
+  //   gas();
+  // }
 
 
   // while (1)
@@ -121,7 +199,7 @@ void ultrasonic_task(__unused void *params)
   while(1)
   {
     uint64_t pulseLength = get_measurement_cm();
-    printf("this is distance: %lldcm \n", pulseLength);
+    // printf("this is distance: %lldcm \n", pulseLength);
 
     if(pulseLength < 10)
     {
@@ -158,25 +236,59 @@ void magnetometer_task(__unused void *params)
 
 void linereader_task(__unused void *params)
 {
+
+  float initial_heading = magnetometer_heading();
+
   while(1)
   {
-    adc_callback();
+    adc_callback_lr();
+
+    int checkWall = scan_walls();
+    if (checkWall == 3)
+    {
+      moveForward();
+      gas();
+      vTaskDelay(pdMS_TO_TICKS(625));
+      continue;
+    }
+    else if (checkWall == 1)
+    {
+      printf("turning right");
+      moveForward();
+      gas();
+      vTaskDelay(pdMS_TO_TICKS(600));
+      rotate_right(90, initial_heading);
+      continue;
+    }
+    else if  (checkWall == 2)
+    {
+      printf("turning left");
+      moveForward();
+      gas();
+      vTaskDelay(pdMS_TO_TICKS(600));
+      rotate_left(90, initial_heading);
+      continue;
+    }
+    vTaskDelay(pdMS_TO_TICKS(100));
   }
 }
 
 
 void vLaunch( void) {
-  TaskHandle_t motorTask;
-  xTaskCreate(motor_task, "MotorThread", configMINIMAL_STACK_SIZE, NULL, TEST_TASK_PRIORITY, &motorTask);
+  // TaskHandle_t motorTask;
+  // xTaskCreate(motor_task, "MotorThread", configMINIMAL_STACK_SIZE, NULL, TEST_TASK_PRIORITY, &motorTask);
 
   // TaskHandle_t wheelencodertask;
   // xTaskCreate(wheelencoder_task, "WheelEncoderThread", configMINIMAL_STACK_SIZE, NULL, TEST_TASK_PRIORITY, &wheelencodertask);
 
-  // TaskHandle_t ultrasonictask;
-  // xTaskCreate(ultrasonic_task, "UltraSonicThread", configMINIMAL_STACK_SIZE, NULL, TEST_TASK_PRIORITY + 1, &ultrasonictask);
+  TaskHandle_t ultrasonictask;
+  xTaskCreate(ultrasonic_task, "UltraSonicThread", configMINIMAL_STACK_SIZE, NULL, TEST_TASK_PRIORITY + 1, &ultrasonictask);
 
   // TaskHandle_t barcodetask;
   // xTaskCreate(barcode_task, "BarCodeThread", configMINIMAL_STACK_SIZE, NULL, TEST_TASK_PRIORITY , &barcodetask);
+
+  TaskHandle_t linereadertask;
+  xTaskCreate(linereader_task, "LineReaderThread", configMINIMAL_STACK_SIZE, NULL, TEST_TASK_PRIORITY , &linereadertask);
 
   // TaskHandle_t magnetometertask;
   // xTaskCreate(magnetometer_task, "MagnetometerThread", configMINIMAL_STACK_SIZE, NULL, TEST_TASK_PRIORITY, &magnetometertask);
@@ -199,6 +311,7 @@ int main( void )
   sensor_init();
   ultrasonic_init();
   barcode_init();
+  ir_sensor_init();
   magnetometer_init();
   sleep_ms(5000);
 

@@ -23,7 +23,7 @@
 #define DOWN 0b0010     // Int value - 2
 #define LEFT 0b0001     // Int value - 1
 
-char *get_time()
+char *get_time_lr()
 {
     struct timeval tv;
     gettimeofday(&tv, NULL);
@@ -91,7 +91,44 @@ void ir_sensor_init()
     
 }
 
-int scan_walls(int carDirection)
+int checkLeft(int32_t adc_scan_left)
+{
+    int walls = 0;
+    if (adc_scan_left > DARK_THRESHOLD) {
+        //walls |= LEFT;
+        walls = 1;
+        printf("Left wall added: %d\n", walls);  // Print the detected walls in binary format
+    }
+    return walls;
+
+}
+
+int checkRight(int32_t adc_scan_right)
+{
+    int walls = 0;
+    if (adc_scan_right > DARK_THRESHOLD) {
+        //walls |= RIGHT;
+        walls = 2;
+        printf("Right wall added: %d\n", walls);  // Print the detected walls in binary format
+    }
+    return walls;
+
+}
+
+int checkBoth(int32_t adc_scan_left, int32_t adc_scan_right)
+{
+    int walls = 0;
+    if (adc_scan_left > DARK_THRESHOLD && adc_scan_right > DARK_THRESHOLD)
+    {
+        walls = 3;
+        printf("Both Left and Right Walls Added: %d", walls);
+    }
+
+    return walls;
+
+}
+
+int scan_walls()
 {
     adc_select_input(1);  // Use ADC channel 1 for the left sensor
     int32_t adc_scan_left = adc_read(); // Reads from ADC channel 1 (left sensor)
@@ -102,70 +139,47 @@ int scan_walls(int carDirection)
     // Initialize the wall variable to 0 (no walls detected)
     int walls = 0;
 
-    char *current_time = get_time();
+    char *current_time = get_time_lr();
 
     printf("%s -> Left ADC Value: %d\n", current_time, adc_scan_left);
     printf("%s -> Right ADC Value: %d\n", current_time, adc_scan_right);
 
+    if (adc_scan_left > DARK_THRESHOLD && adc_scan_right > DARK_THRESHOLD)
+    {
+        walls = 3;
+        printf("Both Left and Right Walls Added: %d", walls);
+    }
+
     // If the left sensor detects a wall, add the left wall bit to the wall variable
-    if (adc_scan_left > DARK_THRESHOLD) {
-        walls |= LEFT;
-        printf("Left wall added: %04b\n", walls);  // Print the detected walls in binary format
+    else if  (adc_scan_left > DARK_THRESHOLD) {
+        //walls |= LEFT;
+        walls = 1;
+        printf("Left wall added: %d\n", walls);  // Print the detected walls in binary format
     }
 
     // If the right sensor detects a wall, add the right wall bit to the wall variable
-    if (adc_scan_right > DARK_THRESHOLD) {
-        walls |= RIGHT;
-        printf("Right wall added: %04b\n", walls);  // Print the detected walls in binary format
+    else if (adc_scan_right > DARK_THRESHOLD) {
+        //walls |= RIGHT;
+        walls = 2;
+        printf("Right wall added: %d\n", walls);  // Print the detected walls in binary format
     }
 
-    if (carDirection == RIGHT) //4
-    {
-        walls = (walls >> 1) | (walls << 3);
-        printf("CAR FACE RIGHT\n");
-    }
-    else if (carDirection == DOWN) //2
-    {
-        walls = (walls >> 2) | (walls << 2);
-        printf("CAR FACE DOWN\n");
-    }
-    else if (carDirection == LEFT) //1
-    {
-        walls = (walls >> 3) | (walls << 1);
-        printf("CAR FACE LEFT\n");
-    }
-    // Rotate the wall variable to match the car's direction this doesnt work 
-    // walls = (walls >> (4 - carDirection)) | (walls << carDirection);
 
-    // Mask the result to 4 bits
-    walls &= 0b1111;
 
-    // Array of direction names
-    char *directions[] = {"up", "right", "down", "left"};
+    //Wei wen please let me know once you are at this point, because if we hid a t-junction, we need to prioritize which way it needs to go then need to u turn to go the other way so that it can map out everything
 
-    // Iterate through each bit in the walls variable
-    for (int i = 0; i < 4; i++) {
-        // Check if the i-th bit is set
-        if ((walls >> i) & 1) {
-            // If the bit is set, print that there is a wall in the corresponding direction
-            printf("There is a wall %s.\n", directions[3 - i]);
-        } else {
-            // If the bit is not set, print that there is no wall in the corresponding direction
-            printf("There is no wall %s.\n", directions[3 - i]);
-        }
-    }
 
     return walls; //Return where there is a wall on the left or right proportional to the car.
     //In the main code I will have to check twice, once facing left or right, then once facing top or down. 
     //Car has to turn once in each cell. Then I will use OR to combine both values of walls and add it to the mapped maze 2d array.
 }
 
-bool adc_callback(struct repeating_timer *t)
+void adc_callback_lr()
 {
     //static bool on_dark_line_left = false;  // Flag for left IR Sensor 
     //static bool on_dark_line_right = false;  // Flag for right IR Sensor 
 
-    char *current_time = get_time();
+    char *current_time = get_time_lr();
 
     adc_select_input(1);  // Use ADC channel 1 for the left sensor
     int32_t adc_reading_left = adc_read(); // Reads from ADC channel 1 (left sensor)
@@ -174,44 +188,43 @@ bool adc_callback(struct repeating_timer *t)
 
     printf("%s -> Left ADC Value: %d\n", current_time, adc_reading_left);
     printf("%s -> Right ADC Value: %d\n", current_time, adc_reading_right);
-    
-    return true;
+
 }
 
-int main()
-{
-    // Initialize stdio for debugging (optional)
-    stdio_init_all();
+// int main()
+// {
+//     // Initialize stdio for debugging (optional)
+//     stdio_init_all();
 
-    ir_sensor_init();
+//     ir_sensor_init();
 
-    struct repeating_timer timer;
+//     struct repeating_timer timer;
 
-    //add_repeating_timer_ms(-500, adc_callback, NULL, &timer); //Value determines how often ADC value is printed 
+//     //add_repeating_timer_ms(-500, adc_callback, NULL, &timer); //Value determines how often ADC value is printed
 
-    while (1) { 
-        char character = getchar();
-        printf("%c", character);
-        switch (character) {
-            case 'r': {
-                // Call the custom reset function
-                //reset_function();
-                add_repeating_timer_ms(-100, adc_callback, NULL, &timer); //Value determines how often ADC value is printed 
-                break;
-            }
-            case 's': {
-                printf("Enter current direction of the car (4 for right, 2 for down, 1 for left, default is up): ");
-                int currentDirection = getchar() - '0';  // Convert from ASCII to integer
-                printf("\nCurrent direction: %d\n", currentDirection);
-                int walls = scan_walls(currentDirection);
-                printf("Detected walls: %04b\n", walls);  // Print the detected walls in binary format
-                break;
-            }
-            case 'q': {
-                return 0;  // Exit the program
-            }
-        }
-    }
-}
+//     while (1) {
+//         char character = getchar();
+//         printf("%c", character);
+//         switch (character) {
+//             case 'r': {
+//                 // Call the custom reset function
+//                 //reset_function();
+//                 add_repeating_timer_ms(-100, adc_callback, NULL, &timer); //Value determines how often ADC value is printed
+//                 break;
+//             }
+//             case 's': {
+//                 printf("Enter current direction of the car (4 for right, 2 for down, 1 for left, default is up): ");
+//                 int currentDirection = getchar() - '0';  // Convert from ASCII to integer
+//                 printf("\nCurrent direction: %d\n", currentDirection);
+//                 int walls = scan_walls(currentDirection);
+//                 printf("Detected walls: %04b\n", walls);  // Print the detected walls in binary format
+//                 break;
+//             }
+//             case 'q': {
+//                 return 0;  // Exit the program
+//             }
+//         }
+//     }
+// }
 
 
