@@ -60,8 +60,9 @@ void motor_task(__unused void *params)
     if (diffAngle >= 80 && diffAngle <= 100)
     {
       // Angle has reached or exceeded 90 degrees, stop the car
-      stop();
       printf("Reached 90 degrees, stopping the car\n");
+      moveForward();
+      gas();
       break; // Exit the loop and end the task
     }
 
