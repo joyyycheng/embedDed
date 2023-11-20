@@ -22,8 +22,8 @@
 float compute_pid1(float setpoint, float current_value, float *integral, float *prev_error)
 {
     // initializing Kp, Ki, Kd values
-    float Kp = 0.5;
-    float Ki = 0.3;
+    float Kp = 0.2;
+    float Ki = 0.1;
     float Kd = 0.00;
 
     float error = current_value - setpoint;
@@ -37,8 +37,8 @@ float compute_pid1(float setpoint, float current_value, float *integral, float *
 float compute_pid2(float setpoint, float current_value, float *integral, float *prev_error)
 {
     // initializing Kp, Ki, Kd values
-    float Kp = 0.3;
-    float Ki = 0.1;
+    float Kp = 0.6;
+    float Ki = 0.3;
     float Kd = 0.00;
 
     float error = current_value - setpoint;
@@ -53,22 +53,25 @@ float compute_pid2(float setpoint, float current_value, float *integral, float *
 
 static char msg[100];
 
-float integral1 = 1;                 // accumulating past errors (CAN CHANGE IF U WANT)
+float integral1 = -1;                 // accumulating past errors (CAN CHANGE IF U WANT)
 float prev_error1 = 0;               // store value of error from previous iteration of loop
 
-float integral2 = 0;                 // accumulating past errors (CAN CHANGE IF U WANT)
+float integral2 = 2;                 // accumulating past errors (CAN CHANGE IF U WANT)
 float prev_error2 = 0;               // store value of error from previous iteration of loop
 
 // accelerate forward
 void *gas()
 {
     // initialise variables
-    float setpoint = 30;             // target speed for the motors (TO BE CHANGED)
-    int pinState1 = getResults1();
-    float current_speed_A = getSpeed(pinState1); // measure speed of motor A
+    float setpoint = 33;             // target speed for the motors (TO BE CHANGED)
 
     int pinState2 = getResults2();
     float current_speed_B = getSpeed2(pinState2); // measure speed of motor B
+
+
+    int pinState1 = getResults1();
+    float current_speed_A = getSpeed(pinState1); // measure speed of motor A
+
 
     // control signal of A
     float control_signal_A = compute_pid1(setpoint, current_speed_A, &integral1, &prev_error1);

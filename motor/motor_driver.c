@@ -14,8 +14,8 @@
 #define MOTOR_IN3_PIN 17 // GPIO4 
 #define MOTOR_IN4_PIN 16 // GPIO5 
 
-volatile float duty_cycle_Left = 12500/1.8; // GPIO5
-volatile float duty_cycle_Right = 12500/2.0;
+volatile float duty_cycle_Left = 12500/1.7; // GPIO5
+volatile float duty_cycle_Right = 12500/1.4                                                                                  ;
 
 void trigger_motor_Left() {
     uint slice_num_motor1 = pwm_gpio_to_slice_num(MOTOR_ENA_PIN); //left
@@ -55,7 +55,6 @@ void set_motor_right(float dutyCycle){
 }   
 
 void motor_init() {  
-    printf("motor");
     gpio_init(MOTOR_ENA_PIN); 
     gpio_init(MOTOR_IN1_PIN); 
     gpio_init(MOTOR_IN2_PIN); 
@@ -116,10 +115,8 @@ void stop()
  
 void moveBackward() 
 { 
-    motorControlA(1, 1, 0); 
+    motorControlA(1, 0, 1); 
     motorControlB(1, 0, 1); 
-    sleep_ms(500); 
-    stop(); 
 } 
  
 void moveForward() 

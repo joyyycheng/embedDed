@@ -68,7 +68,7 @@ void sensor_init()
 bool getResults1 () 
 { 
     int getState = gpio_get(SENSOR1_OUT); 
-    //printf("pin state: %d\n", getState); 
+    //  `printf("pin state: %d\n", getState); 
  
     return getState; 
 } 

@@ -13,12 +13,16 @@
 
 #define LIGHT_THRESHOLD 1500  // Adjust this threshold for light/dark line detection. Ideally value between 300-500
 #define DARK_THRESHOLD 1800  // Adjust this threshold for wide/narrow line detection. Idealy value between 1800-2400
-
+#define RESET_TIMEOUT_MS 1500
 
 struct Code39Character {
     char character;
     char pattern[10];
 };
+
+static bool reset_timer_started = false;
+
+static absolute_time_t reset_start_time;
 
 struct Code39Character code39_binary[] = {
     {'A', "100001001"},
@@ -119,6 +123,24 @@ char *get_time()
     return time_str;
 }
 
+char* reverse_string(char str[], int length) {
+    int start = 0;
+    int end = length - 1;
+
+    while (start < end) {
+        // Swap characters at start and end indices
+        char temp = str[start];
+        str[start] = str[end];
+        str[end] = temp;
+
+        // Move indices toward the center
+        start++;
+        end--;
+    }
+
+    return str;
+}
+
 void printBinary(int num) {
     if (num) {
         printBinary(num >> 1);
@@ -138,10 +160,30 @@ char* binaryToChar(int num) {
     return binaryStr;
 }
 
-void adc_callback()
+void start_reset_timer() {
+    reset_timer_started = true;
+    reset_start_time = get_absolute_time();
+}
+
+void stop_reset_timer() {
+    reset_timer_started = false;
+}
+
+bool is_reset_timer_expired() {
+    if (!reset_timer_started) {
+        return false;
+    }
+
+    absolute_time_t current_time = get_absolute_time();
+    return absolute_time_diff_us(reset_start_time, current_time) / 1000 >= RESET_TIMEOUT_MS;
+}
+
+bool adc_callback()
 {
     static bool on_dark_line = false;  // Flag to track whether the sensor is on a dark line
     static bool first_dark_line_detected = false; // Flag to track the first dark line detection
+    static bool first_character_detected = false; // Flag to track the first character detection
+    static bool is_reversed = false; //Is the barcode detected from the back?
 
     static uint32_t dark_line_duration = 0;  // Duration on a dark line
     static uint32_t white_line_duration = 0;  // Duration on a light line
@@ -154,6 +196,8 @@ void adc_callback()
 
     static uint32_t line_array[9];
 
+    static uint32_t final_barcode[9];
+
     // Initialize a string to store the binary representation
     static int bit_array = 0;
     char *current_time = get_time();
@@ -163,6 +207,7 @@ void adc_callback()
 
     static uint8_t data_buffer = 0;  // Buffer to store binary data
     static uint8_t bit_count = 0;   // Count of bits in the buffer
+    
     // Implement your barcode detection logic here
     if (adc_reading < LIGHT_THRESHOLD) { //If ADC Value is below 500, it is on white line
         // On a white line
@@ -170,6 +215,8 @@ void adc_callback()
         //printf("%s -> White Line Duration: %d\n", current_time, white_line_duration);
         if (on_dark_line) { //Initially on dark line
             // Transition from dark to light
+            stop_reset_timer();
+            start_reset_timer();
             if (first_dark_line_detected && black_line_count <= 4) {
                 printf("Dark %d count: %d\n", black_line_count, dark_line_duration); //Black 0 count: 40
                 line_array[total_line_count] = dark_line_duration;
@@ -210,8 +257,32 @@ void adc_callback()
                 char decoded_character = decode_code39(binary_pattern, code39_binary);
                 //printf("decoded character: %s\n", decoded_character);
                 
-                if (decoded_character != '\0') {
+                // if (decoded_character != '\0') {
+                //     printf("Decoded Character: %c\n", decoded_character);
+                //     first_character_detected = true;
+                // } else {
+                //     printf("Character not found.\n");
+                // }
+
+                if (!first_character_detected && decoded_character == 'P') {
+                    printf("Scanned character: %c, Barcode is reversed.\n", decoded_character);
+                    is_reversed = true;
+                    binary_pattern = binaryToChar(bit_array);
+                    char* reversed_binary_pattern = reverse_string(binary_pattern, 9);
+                    printf("Reversed Binary Pattern: %s\n", reversed_binary_pattern);
+                    char decoded_character = decode_code39(reversed_binary_pattern, code39_binary);
                     printf("Decoded Character: %c\n", decoded_character);
+                    first_character_detected = true;
+                } else if (is_reversed && decoded_character != '\0'){
+                    binary_pattern = binaryToChar(bit_array);
+                    char* reversed_binary_pattern = reverse_string(binary_pattern, 9);
+                    printf("Reversed Binary Pattern: %s\n", reversed_binary_pattern);
+                    char decoded_character = decode_code39(reversed_binary_pattern, code39_binary);
+                    printf("Decoded Character: %c\n", decoded_character);
+                    first_character_detected = true;
+                } else if (!is_reversed && decoded_character != '\0'){
+                    printf("Decoded Character: %c\n", decoded_character);
+                    first_character_detected = true;
                 } else {
                     printf("Character not found.\n");
                 }
@@ -233,7 +304,8 @@ void adc_callback()
             if (bit_count == 8) {
                 // Process the character (e.g., display it, decode it)
                 printf("Character: %c\n", data_buffer);
-            // Reset the buffer and bit count for the next character
+
+                // Reset the buffer and bit count for the next character
                 data_buffer = 0;
                 bit_count = 0;
             }
@@ -244,6 +316,8 @@ void adc_callback()
         //printf("%s -> Dark Line Duration: %d\n", current_time, dark_line_duration);
         // On a dark line
         if (!on_dark_line) { //If change from white to black line
+        stop_reset_timer();
+        start_reset_timer();
             // Transition from light to dark
             if (first_dark_line_detected) {
                 printf("White %d count: %d\n", white_line_count, white_line_duration); //Black 0 count: 40
@@ -261,7 +335,21 @@ void adc_callback()
         }
         dark_line_duration++;
     }
-
+    if (is_reset_timer_expired()) {
+            // Reset the barcode scanning process
+            printf("Resetting barcode scanning process\n");
+            black_line_count = 0;
+            white_line_count = 0;
+            dark_line_duration = 0;
+            white_line_duration = 0;
+            on_dark_line = false;
+            first_dark_line_detected = false;
+            total_line_count = 0;
+            wide_threshold = 0;
+            first_character_detected = false;
+            stop_reset_timer();
+        }
+    return true;
 }
 
 
