@@ -261,16 +261,16 @@ void linereader_task(__unused void *params)
     {
       moveForward();
       gas();
-      vTaskDelay(pdMS_TO_TICKS(600));
-      rotate_right(80, initial_heading);
+      vTaskDelay(pdMS_TO_TICKS(100));
+      rotate_right(8, initial_heading);
       continue;
     }
     else if  (scan_walls() == 2)
     {
       moveForward();
       gas();
-      vTaskDelay(pdMS_TO_TICKS(600));
-      rotate_left(70, initial_heading);
+      vTaskDelay(pdMS_TO_TICKS(100));
+      rotate_left(7, initial_heading);
       continue;
     }
     vTaskDelay(pdMS_TO_TICKS(100));
@@ -288,11 +288,11 @@ void vLaunch( void) {
   // TaskHandle_t ultrasonictask;
   // xTaskCreate(ultrasonic_task, "UltraSonicThread", configMINIMAL_STACK_SIZE, NULL, TEST_TASK_PRIORITY, &ultrasonictask);
 
-  TaskHandle_t barcodetask;
-  xTaskCreate(barcode_task, "BarCodeThread", configMINIMAL_STACK_SIZE, NULL, TEST_TASK_PRIORITY , &barcodetask);
+  // TaskHandle_t barcodetask;
+  // xTaskCreate(barcode_task, "BarCodeThread", configMINIMAL_STACK_SIZE, NULL, TEST_TASK_PRIORITY , &barcodetask);
 
-  // TaskHandle_t linereadertask;
-  // xTaskCreate(linereader_task, "LineReaderThread", configMINIMAL_STACK_SIZE, NULL, TEST_TASK_PRIORITY , &linereadertask);
+  TaskHandle_t linereadertask;
+  xTaskCreate(linereader_task, "LineReaderThread", configMINIMAL_STACK_SIZE, NULL, TEST_TASK_PRIORITY , &linereadertask);
 
   // TaskHandle_t magnetometertask;
   // xTaskCreate(magnetometer_task, "MagnetometerThread", configMINIMAL_STACK_SIZE, NULL, TEST_TASK_PRIORITY, &magnetometertask);
@@ -314,8 +314,8 @@ int main( void )
   motor_init();
   sensor_init();
   ultrasonic_init();
-  barcode_init();
-  // ir_sensor_init();
+  //barcode_init();
+  ir_sensor_init();
   magnetometer_init();
   sleep_ms(5000);
 
