@@ -1,6 +1,7 @@
 #include "stdint.h"
 
-void sensorInit();
+void sensor_init();
 bool getResults1();
 bool getResults2();
-void getSpeed(int pinState);
+float getSpeed(int pinState);
+float getSpeed2(int pinState);
