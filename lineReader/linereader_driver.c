@@ -7,22 +7,25 @@
 #include "hardware/adc.h"
 #include "pico/time.h"
 
-#define VCC_PIN_LEFT 18 //Red
-#define ADC_PIN_LEFT 27
+#define VCC_PIN_LEFT 18 // VCC pin for the left sensor (Red)
+#define ADC_PIN_LEFT 27 // ADC pin for the left sensor
 
-#define VCC_PIN_RIGHT 19 //Brown
-#define ADC_PIN_RIGHT 28
+#define VCC_PIN_RIGHT 19 // VCC pin for the right sensor (Brown)
+#define ADC_PIN_RIGHT 28 // ADC pin for the right sensor
 
+// Thresholds for light and dark line detection
 #define LIGHT_THRESHOLD 1500  // Adjust this threshold for light/dark line detection. Ideally value between 300-500
 #define DARK_THRESHOLD 1800  // Adjust this threshold for wide/narrow line detection. Ideally value between 1800-2400
 
 
-// Direction constants
+// Direction constants for navigation
 #define UP 0b1000       // Int value - 8 
 #define RIGHT 0b0100    // Int value - 4
 #define DOWN 0b0010     // Int value - 2
 #define LEFT 0b0001     // Int value - 1
 
+
+// Function to get the current time in "hh:mm:ss:ms" format
 char *get_time_lr()
 {
     struct timeval tv;
@@ -39,6 +42,7 @@ char *get_time_lr()
     return time_str;
 }
 
+// Function to convert an integer to a binary string representation
 char* intToBinaryString(int num) {
         static char binaryString[33];
         int i;
@@ -49,9 +53,10 @@ char* intToBinaryString(int num) {
         return binaryString;
     }
 
+// Function to initialize IR sensors
 void ir_sensor_init()
 {
-    // Initialize VCC pins for both sensors
+    // Setup and initialize VCC pins for left and right sensors
     gpio_set_function(VCC_PIN_LEFT, GPIO_FUNC_PWM);
     gpio_set_function(VCC_PIN_RIGHT, GPIO_FUNC_PWM);
 
@@ -91,6 +96,7 @@ void ir_sensor_init()
     
 }
 
+// Function to check for a wall on the left using ADC readings
 int checkLeft(int32_t adc_scan_left)
 {
     int walls = 0;
@@ -103,6 +109,7 @@ int checkLeft(int32_t adc_scan_left)
 
 }
 
+// Function to check for a wall on the right using ADC readings
 int checkRight(int32_t adc_scan_right)
 {
     int walls = 0;
@@ -115,6 +122,7 @@ int checkRight(int32_t adc_scan_right)
 
 }
 
+// Function to check for walls on both sides using ADC readings
 int checkBoth(int32_t adc_scan_left, int32_t adc_scan_right)
 {
     int walls = 0;
@@ -128,6 +136,7 @@ int checkBoth(int32_t adc_scan_left, int32_t adc_scan_right)
 
 }
 
+// Function to scan for walls using the IR sensors
 int scan_walls()
 {
     adc_select_input(1);  // Use ADC channel 1 for the left sensor
@@ -144,36 +153,32 @@ int scan_walls()
     printf("%s -> Left ADC Value: %d\n", current_time, adc_scan_left);
     printf("%s -> Right ADC Value: %d\n", current_time, adc_scan_right);
 
+
+    // Check for walls on left, right, or both sides
     if (adc_scan_left > DARK_THRESHOLD && adc_scan_right > DARK_THRESHOLD)
     {
-        walls = 3;
+        walls = 3; // Both walls detected
         printf("Both Left and Right Walls Added: %d", walls);
     }
 
     // If the left sensor detects a wall, add the left wall bit to the wall variable
     else if  (adc_scan_left > DARK_THRESHOLD) {
-        //walls |= LEFT;
-        walls = 1;
+        walls = 1; // Left wall detected
         printf("Left wall added: %d\n", walls);  // Print the detected walls in binary format
     }
 
     // If the right sensor detects a wall, add the right wall bit to the wall variable
     else if (adc_scan_right > DARK_THRESHOLD) {
-        //walls |= RIGHT;
-        walls = 2;
+        walls = 2; // Right wall detected
         printf("Right wall added: %d\n", walls);  // Print the detected walls in binary format
     }
 
 
-
-    //Wei wen please let me know once you are at this point, because if we hid a t-junction, we need to prioritize which way it needs to go then need to u turn to go the other way so that it can map out everything
-
-
     return walls; //Return where there is a wall on the left or right proportional to the car.
-    //In the main code I will have to check twice, once facing left or right, then once facing top or down. 
-    //Car has to turn once in each cell. Then I will use OR to combine both values of walls and add it to the mapped maze 2d array.
 }
 
+
+// Callback function for the ADC readings
 void adc_callback_lr()
 {
     //static bool on_dark_line_left = false;  // Flag for left IR Sensor 
@@ -181,50 +186,14 @@ void adc_callback_lr()
 
     char *current_time = get_time_lr();
 
+    // Read ADC values for left and right sensors
     adc_select_input(1);  // Use ADC channel 1 for the left sensor
     int32_t adc_reading_left = adc_read(); // Reads from ADC channel 1 (left sensor)
     adc_select_input(2);  // Use ADC channel 2 for the right sensor
     int32_t adc_reading_right = adc_read(); // Reads from ADC channel 2 (right sensor)
 
+    // Print the ADC values with timestamps
     printf("%s -> Left ADC Value: %d\n", current_time, adc_reading_left);
     printf("%s -> Right ADC Value: %d\n", current_time, adc_reading_right);
 
 }
-
-// int main()
-// {
-//     // Initialize stdio for debugging (optional)
-//     stdio_init_all();
-
-//     ir_sensor_init();
-
-//     struct repeating_timer timer;
-
-//     //add_repeating_timer_ms(-500, adc_callback, NULL, &timer); //Value determines how often ADC value is printed
-
-//     while (1) {
-//         char character = getchar();
-//         printf("%c", character);
-//         switch (character) {
-//             case 'r': {
-//                 // Call the custom reset function
-//                 //reset_function();
-//                 add_repeating_timer_ms(-100, adc_callback, NULL, &timer); //Value determines how often ADC value is printed
-//                 break;
-//             }
-//             case 's': {
-//                 printf("Enter current direction of the car (4 for right, 2 for down, 1 for left, default is up): ");
-//                 int currentDirection = getchar() - '0';  // Convert from ASCII to integer
-//                 printf("\nCurrent direction: %d\n", currentDirection);
-//                 int walls = scan_walls(currentDirection);
-//                 printf("Detected walls: %04b\n", walls);  // Print the detected walls in binary format
-//                 break;
-//             }
-//             case 'q': {
-//                 return 0;  // Exit the program
-//             }
-//         }
-//     }
-// }
-
-
