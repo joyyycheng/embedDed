@@ -7,23 +7,25 @@
 #include "hardware/adc.h"
 #include "pico/time.h"
 
-#define VCC_PIN 14 // original was 2
-//#define GND_PIN 15 // original was 2
-#define ADC_PIN 26
+#define VCC_PIN 14 // Pin number for VCC, originally was 2
+#define ADC_PIN 26 // Pin number for ADC
+
 
 #define LIGHT_THRESHOLD 1500  // Adjust this threshold for light/dark line detection. Ideally value between 300-500
 #define DARK_THRESHOLD 1800  // Adjust this threshold for wide/narrow line detection. Idealy value between 1800-2400
-#define RESET_TIMEOUT_MS 1500
+#define RESET_TIMEOUT_MS 1500 // Timeout for reset in milliseconds
 
+// Structure to represent a Code39 barcode character
 struct Code39Character {
     char character;
     char pattern[10];
 };
 
+// Flags and timer for reset functionality
 static bool reset_timer_started = false;
-
 static absolute_time_t reset_start_time;
 
+// Array of Code39 barcode characters and their binary patterns
 struct Code39Character code39_binary[] = {
     {'A', "100001001"},
     {'B', "001001001"},
@@ -71,20 +73,17 @@ struct Code39Character code39_binary[] = {
     {'%', "000010010"}
 };
 
+// Function to initialize the barcode scanner hardware
 void barcode_init()
 {
+    // Setting up PWM for VCC_PIN
     gpio_set_function(VCC_PIN, GPIO_FUNC_PWM);
-    
     gpio_init(VCC_PIN); 
-    // gpio_init(GND_PIN);
-
     gpio_set_dir(VCC_PIN, GPIO_OUT); 
-    // gpio_set_dir(GND_PIN, GPIO_OUT); 
-
     gpio_put(VCC_PIN, 1);  // Set VCC pin to HIGH 
-    // gpio_put(GND_PIN, 0);  // Set GND pin to LOW 
 
     uint slice_num = pwm_gpio_to_slice_num(VCC_PIN);
+    // Configuring PWM settings
     pwm_set_clkdiv(slice_num, 100);                  // Adjust the clock divider, PWM signal frequency reduced by factor of 100
     pwm_set_wrap(slice_num, 62500);                  // Period of the PWM signal
     pwm_set_chan_level(slice_num, PWM_CHAN_A, 1250); // 50% duty cycle, high for half, low for other half
@@ -100,10 +99,10 @@ void barcode_init()
 char decode_code39(const char* binary_pattern, struct Code39Character* dictionary) {
     for (int i = 0; i < 44; i++) {
         if (strcmp(binary_pattern, dictionary[i].pattern) == 0) {
-            return dictionary[i].character;
+            return dictionary[i].character; // Return the matched character
         }
     }
-    return '\0';  // Pattern not found in the dictionary.
+    return '\0';  // Return null character if pattern not found
 }
 
 // Function to get the current time in "hh:mm:ss:ms" format
@@ -123,6 +122,8 @@ char *get_time()
     return time_str;
 }
 
+
+// Function to reverse a string
 char* reverse_string(char str[], int length) {
     int start = 0;
     int end = length - 1;
@@ -138,9 +139,10 @@ char* reverse_string(char str[], int length) {
         end--;
     }
 
-    return str;
+    return str; // Return the reversed string
 }
 
+// Recursive function to print binary representation of a number
 void printBinary(int num) {
     if (num) {
         printBinary(num >> 1);
@@ -148,38 +150,45 @@ void printBinary(int num) {
     }
 }
 
+// Function to convert an integer to a binary string representation
 char* binaryToChar(int num) {
     static char binaryStr[10];  // Allocate a char array to hold binary representation
     binaryStr[9] = '\0';       // Null-terminate the string
 
     for (int i = 8; i >= 0; i--) {
         binaryStr[i] = (num & 1) ? '1' : '0';
-        num >>= 1;
+        num >>= 1; // Right-shifting the number
     }
 
-    return binaryStr;
+    return binaryStr; // Return the binary string
 }
 
+// Functions to manage a reset timer
 void start_reset_timer() {
     reset_timer_started = true;
-    reset_start_time = get_absolute_time();
+    reset_start_time = get_absolute_time(); // Storing start time
 }
 
 void stop_reset_timer() {
-    reset_timer_started = false;
+    reset_timer_started = false; // Stopping the timer
 }
 
 bool is_reset_timer_expired() {
     if (!reset_timer_started) {
-        return false;
+        return false; // Timer not started
     }
 
     absolute_time_t current_time = get_absolute_time();
+
+    // Checking if the timer has expired
     return absolute_time_diff_us(reset_start_time, current_time) / 1000 >= RESET_TIMEOUT_MS;
 }
 
+
+// ADC callback function for barcode scanning logic
 bool adc_callback()
 {
+    // Variables for tracking barcode scanning state
     static bool on_dark_line = false;  // Flag to track whether the sensor is on a dark line
     static bool first_dark_line_detected = false; // Flag to track the first dark line detection
     static bool first_character_detected = false; // Flag to track the first character detection
@@ -208,7 +217,7 @@ bool adc_callback()
     static uint8_t data_buffer = 0;  // Buffer to store binary data
     static uint8_t bit_count = 0;   // Count of bits in the buffer
     
-    // Implement your barcode detection logic here
+    // Barcode detection
     if (adc_reading < LIGHT_THRESHOLD) { //If ADC Value is below 500, it is on white line
         // On a white line
         //printf("%s -> On White Line\n", current_time);
@@ -256,13 +265,6 @@ bool adc_callback()
                 printf("Binary Pattern: %s\n", binary_pattern);
                 char decoded_character = decode_code39(binary_pattern, code39_binary);
                 //printf("decoded character: %s\n", decoded_character);
-                
-                // if (decoded_character != '\0') {
-                //     printf("Decoded Character: %c\n", decoded_character);
-                //     first_character_detected = true;
-                // } else {
-                //     printf("Character not found.\n");
-                // }
 
                 if (!first_character_detected && decoded_character == 'P') {
                     printf("Scanned character: %c, Barcode is reversed.\n", decoded_character);
